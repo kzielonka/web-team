@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Web-team adventure</title>
+  <link rel="stylesheet" href="style.css?v=20260918_v9">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="game-wrapper">
+    <!-- Simple Top HUD -->
+    <header class="game-hud">
+      <div class="hud-card score-card">
+        <span class="hud-label">SCORE</span>
+        <span id="score-display" class="hud-val">0</span>
+      </div>
+
+      <div class="hud-title-box">
+        <h1 class="hud-game-title">Web-team adventure</h1>
+      </div>
+
+      <div class="timer-container">
+        <div class="timer-circle-wrap">
+          <svg class="timer-svg" viewBox="0 0 100 100">
+            <circle class="timer-bg" cx="50" cy="50" r="44"></circle>
+            <circle id="timer-progress" class="timer-bar" cx="50" cy="50" r="44"></circle>
+          </svg>
+          <div class="timer-text-box">
+            <span id="time-display">60.0</span>
+            <span class="sec-label">SEC</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Game Scene -->
+    <main id="scene-container" class="scene">
+      <!-- Floating Particles & Shockwaves -->
+      <div id="particles-container"></div>
+
+      <!-- THE MANAGER (Always visible on screen with speech popup) -->
+      <div id="manager-character" class="manager-character">
+        <div class="manager-speech-wrap">
+          <div class="manager-header-row">
+            <div class="manager-badge-tag">MANAGER</div>
+            <div class="manager-timer-wrap">
+              <div id="manager-timer-bar" class="manager-timer-bar"></div>
+            </div>
+          </div>
+          <p id="manager-question" class="manager-question">Quick sync on Jira?</p>
+          <div id="manager-options" class="manager-options-grid"></div>
+        </div>
+
+        <div class="manager-body-group">
+          <!-- Coffee Cup -->
+          <div class="coffee-cup">
+            <div class="coffee-steam"></div>
+            <div class="coffee-handle"></div>
+          </div>
+          <!-- Hand holding coffee -->
+          <div class="manager-hand"></div>
+
+          <!-- Head -->
+          <div class="manager-head">
+            <div class="manager-hair"></div>
+            <div class="manager-glasses">
+              <div class="glass-lens left"></div>
+              <div class="glass-bridge"></div>
+              <div class="glass-lens right"></div>
+            </div>
+            <div class="manager-eyes">
+              <div class="manager-eye left"><div class="pupil"></div></div>
+              <div class="manager-eye right"><div class="pupil"></div></div>
+            </div>
+            <div class="manager-nose"></div>
+            <div class="manager-mouth"></div>
+          </div>
+
+          <!-- Torso / Suit & Tie -->
+          <div class="manager-torso">
+            <div class="shirt-collar"></div>
+            <div class="manager-tie"></div>
+            <div class="lanyard-badge">
+              <span>LEAD</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage: Donkey + Chair + Dog -->
+      <div class="stage-area">
+
+        <!-- BIG ANIMATED DONKEY (Hidden until the final second, then pops up laughing!) -->
+        <div id="donkey-character" class="donkey hidden">
+          <!-- Laughing Mocking Speech Bubble -->
+          <div id="donkey-bubble" class="donkey-bubble">HEE-HAW! ONLY 0 POINTS?!</div>
+
+          <!-- Long Moving Donkey Ears -->
+          <div class="donkey-ears">
+            <div class="donkey-ear left-ear">
+              <div class="inner-ear"></div>
+            </div>
+            <div class="donkey-ear right-ear">
+              <div class="inner-ear"></div>
+            </div>
+          </div>
+
+          <!-- Dark Mane crest -->
+          <div class="donkey-mane"></div>
+
+          <!-- Big Donkey Head -->
+          <div class="donkey-head">
+            <div class="donkey-eyes">
+              <div class="donkey-eye left-eye">
+                <div class="pupil"></div>
+                <div class="eye-shine"></div>
+                <div class="laugh-tear left-tear"></div>
+              </div>
+              <div class="donkey-eye right-eye">
+                <div class="pupil"></div>
+                <div class="eye-shine"></div>
+                <div class="laugh-tear right-tear"></div>
+              </div>
+            </div>
+
+            <!-- Donkey Muzzle with Nostrils & Laughing Open Mouth -->
+            <div class="donkey-muzzle">
+              <div class="donkey-nostrils">
+                <div class="nostril left"></div>
+                <div class="nostril right"></div>
+              </div>
+              <div class="donkey-mouth-wrap">
+                <div class="donkey-teeth"></div>
+                <div class="donkey-laugh-mouth">
+                  <div class="donkey-laugh-tongue"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Big Donkey Torso & Shoulders -->
+          <div class="donkey-body">
+            <div class="donkey-chest"></div>
+          </div>
+
+          <!-- Donkey Hooves resting on chair backrest -->
+          <div class="donkey-hooves">
+            <div class="donkey-hoof left-hoof">
+              <div class="hoof-rim"></div>
+            </div>
+            <div class="donkey-hoof right-hoof">
+              <div class="hoof-rim"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Wooden Chair Backrest -->
+        <div class="chair-back">
+          <div class="chair-cushion"></div>
+        </div>
+
+        <!-- Animated Dog Character (Sitting on chair) -->
+        <div id="dog-character" class="dog neutral">
+          <!-- Tail wagging -->
+          <div class="dog-tail"></div>
+
+          <!-- Dog Body -->
+          <div class="dog-body">
+            <div class="dog-belly"></div>
+            <div class="dog-collar">
+              <div class="dog-tag"></div>
+            </div>
+          </div>
+
+          <!-- Dog Head -->
+          <div class="dog-head">
+            <div class="dog-ear left-ear"></div>
+            <div class="dog-ear right-ear"></div>
+
+            <div class="dog-face">
+              <div class="eyebrows">
+                <div class="eyebrow left"></div>
+                <div class="eyebrow right"></div>
+              </div>
+
+              <div class="eyes-row">
+                <div class="dog-eye left-eye">
+                  <div class="pupil"></div>
+                  <div class="eye-shine"></div>
+                </div>
+                <div class="dog-eye right-eye">
+                  <div class="pupil"></div>
+                  <div class="eye-shine"></div>
+                </div>
+              </div>
+
+              <div class="blush left-blush"></div>
+              <div class="blush right-blush"></div>
+
+              <div class="dog-snout">
+                <div class="dog-nose"></div>
+                <div class="dog-mouth">
+                  <div class="dog-tongue"></div>
+                </div>
+              </div>
+
+              <div class="busted-bubble">BUSTED!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- The White Table / Desk -->
+      <div id="white-table-wrap" class="table-container">
+        <div id="white-table" class="white-table">
+          <div class="table-top-shine"></div>
+          <div class="table-surface-line"></div>
+          <!-- Rocket League Pitch Markings -->
+          <div class="pitch-markings">
+            <div class="pitch-half-line"></div>
+            <div class="pitch-center-circle"></div>
+          </div>
+
+          <!-- Arena Goal Net at Top Center -->
+          <div id="arena-goal" class="arena-goal">
+            <div class="goal-posts"></div>
+            <div class="goal-net-mesh"></div>
+            <div class="goal-label">GOAL</div>
+          </div>
+
+          <!-- Rocket League Car (WASD Controlled) -->
+          <div id="rocket-car" class="rocket-car">
+            <div class="car-flame"></div>
+            <div class="car-wheels">
+              <div class="wheel fl"></div>
+              <div class="wheel fr"></div>
+              <div class="wheel bl"></div>
+              <div class="wheel br"></div>
+            </div>
+            <div class="car-chassis">
+              <div class="car-spoiler"></div>
+              <div class="car-cockpit"></div>
+              <div class="car-lights"></div>
+            </div>
+          </div>
+
+          <!-- Rocket League Ball -->
+          <div id="rocket-ball" class="rocket-ball">
+            <div class="ball-pattern"></div>
+            <div class="ball-shine"></div>
+          </div>
+
+          <!-- Goal Scored Explosion Banner -->
+          <div id="goal-banner" class="goal-banner">GOAL! +3</div>
+
+          <!-- Front Paws (Always resting calmly on table) -->
+          <div class="front-paws-zone">
+            <div class="front-paw left-front-paw">
+              <div class="toe-beans"><span></span><span></span><span></span></div>
+            </div>
+            <div class="front-paw right-front-paw">
+              <div class="toe-beans"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+
+          <!-- REAR PAWS (The sneaky paws trying to climb onto the table) -->
+          <!-- Left Rear Paw Spawner Track -->
+          <div id="left-paw-zone" class="paw-hit-area left-paw-area" role="button" aria-label="Tap Left Rear Paw">
+            <div id="paw-left" class="rear-paw paw-left">
+              <div class="paw-leg"></div>
+              <div class="paw-foot">
+                <div class="paw-pads">
+                  <span class="pad-toe"></span>
+                  <span class="pad-toe"></span>
+                  <span class="pad-toe"></span>
+                  <span class="pad-main"></span>
+                </div>
+              </div>
+              <div class="tap-hint">TAP!</div>
+            </div>
+          </div>
+
+          <!-- Right Rear Paw Spawner Track -->
+          <div id="right-paw-zone" class="paw-hit-area right-paw-area" role="button" aria-label="Tap Right Rear Paw">
+            <div id="paw-right" class="rear-paw paw-right">
+              <div class="paw-leg"></div>
+              <div class="paw-foot">
+                <div class="paw-pads">
+                  <span class="pad-toe"></span>
+                  <span class="pad-toe"></span>
+                  <span class="pad-toe"></span>
+                  <span class="pad-main"></span>
+                </div>
+              </div>
+              <div class="tap-hint">TAP!</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Legs -->
+        <div class="table-legs">
+          <div class="leg left-leg"></div>
+          <div class="leg right-leg"></div>
+        </div>
+
+        <!-- Rocket League Controls Bar -->
+        <div class="game-controls-bar">
+          <div class="keys-guide">
+            <span class="key-badge">W</span>
+            <span class="key-badge">A</span>
+            <span class="key-badge">S</span>
+            <span class="key-badge">D</span>
+            <span class="guide-text">Rocket Car | Space: Boost | Score in GOAL (+3 pts)!</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Start Overlay -->
+    <div id="start-overlay" class="overlay active">
+      <div class="overlay-card">
+        <div class="modal-badge">1 MINUTE SPEED CHALLENGE</div>
+        <h1>Web-team adventure</h1>
+        <p class="game-desc">
+          Drive the <strong>Rocket Car (WASD)</strong> to hit the ball into the <strong>GOAL (+3 pts)</strong>!
+          <br>Tap or ram the dog's rear paws, and answer <strong>"5 do 1"</strong> to the manager!
+        </p>
+
+        <div class="instructions-visual">
+          <div class="inst-item ok">
+            <div class="inst-symbol front-sym">WASD</div>
+            <span>Rocket Car</span>
+          </div>
+          <div class="inst-divider">+</div>
+          <div class="inst-item ok">
+            <div class="inst-symbol front-sym">GOAL</div>
+            <span>Score (+3)</span>
+          </div>
+          <div class="inst-divider">+</div>
+          <div class="inst-item danger">
+            <div class="inst-symbol rear-sym">HIT</div>
+            <span>Rear Paws</span>
+          </div>
+        </div>
+
+        <button id="start-btn" class="primary-btn pulse-glow">
+          <span class="btn-text">START PLAYING (1 MIN)</span>
+          <span class="btn-subtext">WASD to Drive | Click or Tap!</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="gameover-overlay" class="overlay">
+      <div class="overlay-card">
+        <div id="result-icon-box" class="result-star-badge">GAME OVER</div>
+        <h2 id="result-title">Time's Up!</h2>
+        <div id="result-badge" class="result-tier">Web-Team Champion</div>
+
+        <div class="result-stats">
+          <div class="stat-box">
+            <span class="stat-num" id="final-score">0</span>
+            <span class="stat-label">Paws Hit</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-num" id="final-tps">0.0</span>
+            <span class="stat-label">Hits / Sec</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-num" id="final-record">0</span>
+            <span class="stat-label">Best Record</span>
+          </div>
+        </div>
+
+        <p id="result-comment" class="result-commentary">
+          The donkey is laughing at your score!
+        </p>
+
+        <div class="overlay-actions">
+          <button id="restart-btn" class="primary-btn pulse-glow">
+            <span class="btn-text">PLAY AGAIN</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js?v=20260918_v9"></script>
+</body>
+</html>
