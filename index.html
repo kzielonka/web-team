@@ -7,7 +7,7 @@
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Web-team adventure</title>
-  <link rel="stylesheet" href="style.css?v=20260918_v9">
+  <link rel="stylesheet" href="style.css?v=multiplayer_60s_v1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
@@ -23,6 +23,10 @@
 
       <div class="hud-title-box">
         <h1 class="hud-game-title">Web-team adventure</h1>
+        <div class="coop-status-badge">
+          <span class="live-dot"></span>
+          <span id="player-count">1 PLAYER ONLINE</span>
+        </div>
       </div>
 
       <div class="timer-container">
@@ -318,6 +322,15 @@
             <span class="key-badge">D</span>
             <span class="guide-text">Rocket Car | Space: Boost | Score in GOAL (+3 pts)!</span>
           </div>
+
+          <!-- Mobile / Touch Controls -->
+          <div id="touch-controls" class="touch-controls">
+            <button id="btn-touch-left" class="touch-ctrl-btn" type="button" aria-label="Steer Left">◀</button>
+            <button id="btn-touch-forward" class="touch-ctrl-btn" type="button" aria-label="Drive Forward">▲</button>
+            <button id="btn-touch-backward" class="touch-ctrl-btn" type="button" aria-label="Reverse">▼</button>
+            <button id="btn-touch-right" class="touch-ctrl-btn" type="button" aria-label="Steer Right">▶</button>
+            <button id="btn-touch-boost" class="touch-ctrl-btn touch-boost" type="button" aria-label="Rocket Boost">BOOST</button>
+          </div>
         </div>
       </div>
     </main>
@@ -391,6 +404,6 @@
     </div>
   </div>
 
-  <script src="game.js?v=20260918_v9"></script>
+  <script src="game.js?v=multiplayer_60s_v1"></script>
 </body>
 </html>

@@ -117,8 +117,14 @@ class WebTeamAdventure {
     this.dogCaughtTimeout = null;
     this.circumference = 2 * Math.PI * 44;
 
+    // Multiplayer State
+    this.playerCountBadge = document.getElementById('player-count');
+    this.isMultiplayer = false;
+    this.ws = null;
+
     this.initAudio();
     this.bindEvents();
+    this.connectWebSocket();
   }
 
   initAudio() {
@@ -334,6 +340,57 @@ class WebTeamAdventure {
     });
   }
 
+  sendInputState() {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: 'car_input', data: this.keys }));
+    }
+  }
+
+  connectWebSocket() {
+    try {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      this.ws = new WebSocket(wsUrl);
+
+      this.ws.onopen = () => {
+        this.isMultiplayer = true;
+        this.sendInputState();
+      };
+
+      this.ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'state') {
+            this.applyServerState(msg);
+          } else if (msg.type === 'event') {
+            this.applyServerEvent(msg);
+          } else if (msg.type === 'players_update') {
+            this.updatePlayerCount(msg.count);
+          }
+        } catch (err) {}
+      };
+
+      this.ws.onclose = () => {
+        this.isMultiplayer = false;
+        this.updatePlayerCount(1);
+        setTimeout(() => this.connectWebSocket(), 2000);
+      };
+
+      this.ws.onerror = () => {
+        if (this.ws) this.ws.close();
+      };
+    } catch (e) {
+      setTimeout(() => this.connectWebSocket(), 3000);
+    }
+  }
+
+  updatePlayerCount(count) {
+    if (this.playerCountBadge) {
+      const c = Math.max(1, count || 1);
+      this.playerCountBadge.textContent = `${c} PLAYER${c > 1 ? 'S' : ''} ONLINE`;
+    }
+  }
+
   bindEvents() {
     this.startBtn.addEventListener('click', () => this.startGame());
     this.restartBtn.addEventListener('click', () => this.startGame());
@@ -346,37 +403,86 @@ class WebTeamAdventure {
       }
 
       if (this.isPlaying) {
+        let changed = false;
         if (e.code === 'KeyW' || e.code === 'ArrowUp') {
           this.keys.forward = true;
+          changed = true;
           e.preventDefault();
         } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
           this.keys.backward = true;
+          changed = true;
           e.preventDefault();
         } else if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
           this.keys.left = true;
+          changed = true;
           e.preventDefault();
         } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
           this.keys.right = true;
+          changed = true;
           e.preventDefault();
         } else if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
           this.keys.boost = true;
+          changed = true;
           e.preventDefault();
         }
+        if (changed) this.sendInputState();
       }
     });
 
     window.addEventListener('keyup', (e) => {
+      let changed = false;
       if (e.code === 'KeyW' || e.code === 'ArrowUp') {
         this.keys.forward = false;
+        changed = true;
       } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
         this.keys.backward = false;
+        changed = true;
       } else if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
         this.keys.left = false;
+        changed = true;
       } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
         this.keys.right = false;
+        changed = true;
       } else if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
         this.keys.boost = false;
+        changed = true;
       }
+      if (changed) this.sendInputState();
+    });
+
+    // Touch Controls for Mobile / Tablets
+    const touchMap = [
+      { id: 'btn-touch-left', key: 'left' },
+      { id: 'btn-touch-right', key: 'right' },
+      { id: 'btn-touch-forward', key: 'forward' },
+      { id: 'btn-touch-backward', key: 'backward' },
+      { id: 'btn-touch-boost', key: 'boost' }
+    ];
+
+    touchMap.forEach(item => {
+      const btn = document.getElementById(item.id);
+      if (!btn) return;
+
+      const press = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        btn.classList.add('pressed');
+        this.keys[item.key] = true;
+        this.sendInputState();
+      };
+
+      const release = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        btn.classList.remove('pressed');
+        this.keys[item.key] = false;
+        this.sendInputState();
+      };
+
+      btn.addEventListener('pointerdown', press);
+      btn.addEventListener('pointerup', release);
+      btn.addEventListener('pointercancel', release);
+      btn.addEventListener('pointerleave', release);
     });
 
     ['left', 'right'].forEach(side => {
@@ -394,9 +500,173 @@ class WebTeamAdventure {
     });
   }
 
+  applyServerState(state) {
+    this.updatePlayerCount(state.players_count);
+    this.score = state.score;
+    this.scoreDisplay.textContent = this.score;
+
+    this.timeLeft = state.time_left;
+    this.gameDuration = state.game_duration;
+    this.timeDisplay.textContent = this.timeLeft.toFixed(1);
+
+    const progress = (this.timeLeft / this.gameDuration);
+    const offset = this.circumference * (1 - progress);
+    this.timerBar.style.strokeDashoffset = offset;
+
+    if (this.timeLeft <= 5.0 && !this.timerBar.classList.contains('urgent')) {
+      this.timerBar.classList.add('urgent');
+    } else if (this.timeLeft > 5.0 && this.timerBar.classList.contains('urgent')) {
+      this.timerBar.classList.remove('urgent');
+    }
+
+    // Sync Game Status
+    if (state.is_playing) {
+      this.isPlaying = true;
+      this.startOverlay.classList.remove('active');
+      this.gameoverOverlay.classList.remove('active');
+    } else if (!state.is_playing && this.isPlaying) {
+      this.isPlaying = false;
+    }
+
+    // Sync Car
+    this.car.x = state.car.x;
+    this.car.y = state.car.y;
+    this.car.angle = state.car.angle;
+    this.renderCarAndBall(state.car.driving, state.car.boosting);
+
+    // Sync Ball
+    this.ball.x = state.ball.x;
+    this.ball.y = state.ball.y;
+    if (this.rocketBallEl) {
+      this.rocketBallEl.style.left = `${this.ball.x}px`;
+      this.rocketBallEl.style.top = `${this.ball.y}px`;
+    }
+
+    // Sync Paws
+    ['left', 'right'].forEach(side => {
+      const paw = this.paws[side];
+      const pState = state.paws[side];
+      paw.state = pState;
+      if (pState === 'sneaking') {
+        paw.el.classList.add('sneaking');
+        paw.el.classList.remove('tapped');
+      } else if (pState === 'tapped') {
+        paw.el.classList.remove('sneaking');
+        paw.el.classList.add('tapped');
+      } else {
+        paw.el.classList.remove('sneaking', 'tapped');
+      }
+    });
+
+    // Sync Manager Quiz
+    const m = state.manager;
+    if (m) {
+      if (m.status === 'question') {
+        if (this.managerQuestion.textContent !== m.question) {
+          this.managerQuestion.textContent = m.question;
+          this.renderManagerOptions(m.options);
+        }
+        if (this.managerTimerBar) {
+          const pct = Math.max(0, Math.min(100, (m.time_remaining / 2.0) * 100));
+          this.managerTimerBar.style.transition = 'none';
+          this.managerTimerBar.style.width = pct + '%';
+        }
+      } else if (m.status === 'approved') {
+        this.managerQuestion.textContent = "APPROVED! 5 do 1!";
+        if (this.managerOptions) this.managerOptions.innerHTML = '';
+        if (this.managerTimerBar) this.managerTimerBar.style.width = '100%';
+      } else if (m.status === 'wrong') {
+        this.managerQuestion.textContent = "WRONG! (Always 5 do 1!)";
+        if (this.managerOptions) this.managerOptions.innerHTML = '';
+        if (this.managerTimerBar) this.managerTimerBar.style.width = '0%';
+      } else if (m.status === 'expired') {
+        this.managerQuestion.textContent = "Too slow! Options expired.";
+        if (this.managerOptions) this.managerOptions.innerHTML = '';
+        if (this.managerTimerBar) this.managerTimerBar.style.width = '0%';
+      }
+    }
+
+    // Sync Donkey
+    if (state.donkey && state.donkey.laughing) {
+      this.donkey.classList.remove('hidden');
+      this.donkey.classList.add('appearing', 'laughing');
+      this.donkeyBubble.textContent = state.donkey.text;
+    } else {
+      this.donkey.classList.add('hidden');
+      this.donkey.classList.remove('appearing', 'laughing');
+    }
+  }
+
+  applyServerEvent(evt) {
+    if (evt.name === 'goal') {
+      this.playGoalHorn();
+      if (this.goalBanner) {
+        this.goalBanner.classList.remove('active');
+        void this.goalBanner.offsetWidth;
+        this.goalBanner.classList.add('active');
+        setTimeout(() => {
+          if (this.goalBanner) this.goalBanner.classList.remove('active');
+        }, 1100);
+      }
+      const sc = this.tableToSceneCoords(evt.x, evt.y);
+      this.spawnHitShockwave(sc.x, sc.y);
+      this.spawnComicSparks(sc.x, sc.y);
+    } else if (evt.name === 'car_ball_hit') {
+      this.playBallHitSound();
+      const sc = this.tableToSceneCoords(evt.x, evt.y);
+      this.spawnComicSparks(sc.x, sc.y);
+    } else if (evt.name === 'ball_hit') {
+      this.playBallHitSound();
+    } else if (evt.name === 'paw_hit') {
+      this.playHitSound();
+      const sc = this.tableToSceneCoords(evt.x, evt.y);
+      this.spawnHitShockwave(sc.x, sc.y);
+      this.spawnComicSparks(sc.x, sc.y);
+      this.spawnTapParticle(sc.x, sc.y);
+      this.triggerTableShake();
+      this.showDogCaught();
+    } else if (evt.name === 'paw_sneak') {
+      this.playSneakSound();
+      this.dog.classList.remove('sneaking-left', 'sneaking-right');
+      this.dog.classList.add(evt.side === 'left' ? 'sneaking-left' : 'sneaking-right');
+    } else if (evt.name === 'paw_retreat') {
+      this.resetDogExpression();
+    } else if (evt.name === 'manager_correct') {
+      this.playTone(880, 'triangle', 0.25, 0.3);
+    } else if (evt.name === 'manager_wrong') {
+      this.playWrongBuzz();
+    } else if (evt.name === 'donkey_laugh') {
+      this.playDonkeyLaughSound();
+    } else if (evt.name === 'game_over') {
+      this.endGame(evt.score, evt.high_score);
+    }
+  }
+
+  renderManagerOptions(options) {
+    if (!this.managerOptions) return;
+    this.managerOptions.innerHTML = '';
+    options.forEach(optText => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'manager-opt-btn';
+      btn.textContent = optText;
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.handleManagerAnswer(optText, btn);
+      });
+      this.managerOptions.appendChild(btn);
+    });
+  }
+
   startGame() {
     if (this.audioCtx && this.audioCtx.state === 'suspended') {
       this.audioCtx.resume();
+    }
+
+    if (this.isMultiplayer && this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: 'start_game' }));
+      return;
     }
 
     // Reset scores & state
@@ -480,21 +750,7 @@ class WebTeamAdventure {
     const options = [...pickedDummies, "5 do 1"].sort(() => Math.random() - 0.5);
 
     // Render options
-    if (this.managerOptions) {
-      this.managerOptions.innerHTML = '';
-      options.forEach(optText => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'manager-opt-btn';
-        btn.textContent = optText;
-        btn.addEventListener('pointerdown', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          this.handleManagerAnswer(optText, btn);
-        });
-        this.managerOptions.appendChild(btn);
-      });
-    }
+    this.renderManagerOptions(options);
 
     // Reset timer bar to 100%
     if (this.managerTimerBar) {
@@ -530,6 +786,9 @@ class WebTeamAdventure {
   }
 
   handleManagerAnswer(selectedOption, buttonEl) {
+    if (this.isMultiplayer && this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: 'manager_answer', option: selectedOption }));
+    }
     if (this.managerAnswered || !this.isPlaying) return;
     this.managerAnswered = true;
 
@@ -585,34 +844,37 @@ class WebTeamAdventure {
   gameLoop(currentTimestamp) {
     if (!this.isPlaying) return;
 
-    const delta = (currentTimestamp - this.lastTimestamp) / 1000;
-    this.lastTimestamp = currentTimestamp;
+    if (!this.isMultiplayer) {
+      const delta = (currentTimestamp - this.lastTimestamp) / 1000;
+      this.lastTimestamp = currentTimestamp;
 
-    this.timeLeft = Math.max(0, this.timeLeft - delta);
-    this.timeDisplay.textContent = this.timeLeft.toFixed(1);
+      this.timeLeft = Math.max(0, this.timeLeft - delta);
+      this.timeDisplay.textContent = this.timeLeft.toFixed(1);
 
-    const progress = (this.timeLeft / this.gameDuration);
-    const offset = this.circumference * (1 - progress);
-    this.timerBar.style.strokeDashoffset = offset;
+      const progress = (this.timeLeft / this.gameDuration);
+      const offset = this.circumference * (1 - progress);
+      this.timerBar.style.strokeDashoffset = offset;
 
-    // Urgent mode for last 3 seconds
-    if (this.timeLeft <= 3.0 && !this.timerBar.classList.contains('urgent')) {
-      this.timerBar.classList.add('urgent');
+      // Urgent mode for last 5 seconds
+      if (this.timeLeft <= 5.0 && !this.timerBar.classList.contains('urgent')) {
+        this.timerBar.classList.add('urgent');
+      }
+
+      // Rocket League arena car & ball physics simulation
+      this.updateRocketLeaguePhysics(delta);
+
+      // DONKEY SURPRISE: Appears in the LAST SECOND (timeLeft <= 1.0) laughing at the score!
+      if (this.timeLeft <= 1.0 && !this.donkeyTriggered) {
+        this.triggerDonkeyLaugh();
+      }
+
+      if (this.timeLeft <= 0) {
+        this.endGame();
+        return;
+      }
     }
 
-    // Rocket League arena car & ball physics simulation
-    this.updateRocketLeaguePhysics(delta);
-
-    // DONKEY SURPRISE: Appears in the LAST SECOND (timeLeft <= 1.0) laughing at the score!
-    if (this.timeLeft <= 1.0 && !this.donkeyTriggered) {
-      this.triggerDonkeyLaugh();
-    }
-
-    if (this.timeLeft <= 0) {
-      this.endGame();
-    } else {
-      this.timerRafId = requestAnimationFrame((ts) => this.gameLoop(ts));
-    }
+    this.timerRafId = requestAnimationFrame((ts) => this.gameLoop(ts));
   }
 
   // Rocket League Physics Loop on Desk
@@ -770,15 +1032,15 @@ class WebTeamAdventure {
     };
   }
 
-  renderCarAndBall() {
+  renderCarAndBall(forceDriving = null, forceBoosting = null) {
     if (this.rocketCarEl) {
       const deg = (this.car.angle * 180 / Math.PI);
       this.rocketCarEl.style.left = `${this.car.x}px`;
       this.rocketCarEl.style.top = `${this.car.y}px`;
       this.rocketCarEl.style.transform = `translate(-50%, -50%) rotate(${deg}deg)`;
 
-      const isDriving = Math.abs(this.car.speed) > 15;
-      const isBoosting = this.keys.boost && (this.keys.forward || this.car.speed > 50);
+      const isDriving = forceDriving !== null ? forceDriving : Math.abs(this.car.speed) > 15;
+      const isBoosting = forceBoosting !== null ? forceBoosting : (this.keys.boost && (this.keys.forward || this.car.speed > 50));
       this.rocketCarEl.classList.toggle('driving', isDriving);
       this.rocketCarEl.classList.toggle('boosting', isBoosting);
     }
@@ -919,6 +1181,9 @@ class WebTeamAdventure {
   }
 
   handlePawTap(side, event) {
+    if (this.isMultiplayer && this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: 'paw_tap', side: side }));
+    }
     if (!this.isPlaying) return;
 
     const paw = this.paws[side];
