@@ -119,8 +119,13 @@ class WebTeamAdventure {
 
     // Multiplayer State
     this.playerCountBadge = document.getElementById('player-count');
+    this.myCarTag = document.getElementById('my-car-tag');
+    this.carsContainer = document.getElementById('cars-container');
     this.isMultiplayer = false;
     this.ws = null;
+    this.myPlayerId = null;
+    this.myColorIdx = 0;
+    this.carElements = {};
 
     this.initAudio();
     this.bindEvents();
@@ -360,7 +365,15 @@ class WebTeamAdventure {
       this.ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data);
-          if (msg.type === 'state') {
+          if (msg.type === 'init_player') {
+            this.myPlayerId = msg.player_id;
+            this.myColorIdx = msg.color_idx;
+            const names = ['RED', 'BLUE', 'GREEN', 'PURPLE', 'GOLD', 'MAGENTA'];
+            const colorName = names[msg.color_idx % names.length];
+            if (this.myCarTag) {
+              this.myCarTag.textContent = `YOU: ${this.myPlayerId} (${colorName})`;
+            }
+          } else if (msg.type === 'state') {
             this.applyServerState(msg);
           } else if (msg.type === 'event') {
             this.applyServerEvent(msg);
@@ -528,11 +541,15 @@ class WebTeamAdventure {
       this.isPlaying = false;
     }
 
-    // Sync Car
-    this.car.x = state.car.x;
-    this.car.y = state.car.y;
-    this.car.angle = state.car.angle;
-    this.renderCarAndBall(state.car.driving, state.car.boosting);
+    // Sync Cars (Multi-Car per player)
+    if (state.cars && this.carsContainer) {
+      this.syncMultiCars(state.cars);
+    } else if (state.car) {
+      this.car.x = state.car.x;
+      this.car.y = state.car.y;
+      this.car.angle = state.car.angle;
+      this.renderCarAndBall(state.car.driving, state.car.boosting);
+    }
 
     // Sync Ball
     this.ball.x = state.ball.x;
@@ -657,6 +674,77 @@ class WebTeamAdventure {
       });
       this.managerOptions.appendChild(btn);
     });
+  }
+
+  syncMultiCars(carsMap) {
+    if (!this.carsContainer) return;
+
+    // Hide default template car if dynamic cars exist
+    if (this.rocketCarEl && Object.keys(carsMap).length > 0) {
+      this.rocketCarEl.style.display = 'none';
+    }
+
+    const activeIds = new Set(Object.keys(carsMap));
+
+    // Remove cars that left
+    for (const pid in this.carElements) {
+      if (!activeIds.has(pid)) {
+        const el = this.carElements[pid];
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+        delete this.carElements[pid];
+      }
+    }
+
+    // Create / update cars
+    for (const pid in carsMap) {
+      const carData = carsMap[pid];
+      let el = this.carElements[pid];
+
+      if (!el) {
+        el = document.createElement('div');
+        el.id = `car-${pid}`;
+        el.className = `rocket-car car-color-${carData.color_idx % 6}`;
+
+        const isMe = (pid === this.myPlayerId);
+        el.innerHTML = `
+          <div class="car-player-tag ${isMe ? 'is-me' : ''}">${pid}${isMe ? ' (You)' : ''}</div>
+          <div class="car-flame"></div>
+          <div class="car-wheels">
+            <div class="wheel fl"></div>
+            <div class="wheel fr"></div>
+            <div class="wheel bl"></div>
+            <div class="wheel br"></div>
+          </div>
+          <div class="car-chassis">
+            <div class="car-spoiler"></div>
+            <div class="car-cockpit"></div>
+            <div class="car-lights"></div>
+          </div>
+        `;
+        this.carsContainer.appendChild(el);
+        this.carElements[pid] = el;
+      }
+
+      const deg = (carData.angle * 180 / Math.PI);
+      el.style.left = `${carData.x}px`;
+      el.style.top = `${carData.y}px`;
+      el.style.transform = `translate(-50%, -50%) rotate(${deg}deg)`;
+
+      el.classList.toggle('driving', Boolean(carData.driving));
+      el.classList.toggle('boosting', Boolean(carData.boosting));
+
+      const tag = el.querySelector('.car-player-tag');
+      if (tag) {
+        const isMe = (pid === this.myPlayerId);
+        if (isMe && !tag.classList.contains('is-me')) {
+          tag.classList.add('is-me');
+          tag.textContent = `${pid} (You)`;
+        } else if (!isMe && tag.classList.contains('is-me')) {
+          tag.classList.remove('is-me');
+          tag.textContent = pid;
+        }
+      }
+    }
   }
 
   startGame() {

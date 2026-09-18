@@ -26,6 +26,7 @@
         <div class="coop-status-badge">
           <span class="live-dot"></span>
           <span id="player-count">1 PLAYER ONLINE</span>
+          <span id="my-car-tag" class="my-car-badge">YOU: P1</span>
         </div>
       </div>
 
@@ -238,19 +239,22 @@
             <div class="goal-label">GOAL</div>
           </div>
 
-          <!-- Rocket League Car (WASD Controlled) -->
-          <div id="rocket-car" class="rocket-car">
-            <div class="car-flame"></div>
-            <div class="car-wheels">
-              <div class="wheel fl"></div>
-              <div class="wheel fr"></div>
-              <div class="wheel bl"></div>
-              <div class="wheel br"></div>
-            </div>
-            <div class="car-chassis">
-              <div class="car-spoiler"></div>
-              <div class="car-cockpit"></div>
-              <div class="car-lights"></div>
+          <!-- Rocket League Cars (Each player gets their own car!) -->
+          <div id="cars-container" class="cars-container">
+            <div id="rocket-car" class="rocket-car car-color-0">
+              <div class="car-player-tag is-me">P1 (You)</div>
+              <div class="car-flame"></div>
+              <div class="car-wheels">
+                <div class="wheel fl"></div>
+                <div class="wheel fr"></div>
+                <div class="wheel bl"></div>
+                <div class="wheel br"></div>
+              </div>
+              <div class="car-chassis">
+                <div class="car-spoiler"></div>
+                <div class="car-cockpit"></div>
+                <div class="car-lights"></div>
+              </div>
             </div>
           </div>
 

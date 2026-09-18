@@ -127,6 +127,17 @@ body {
   50% { transform: scale(1.4); opacity: 0.5; }
 }
 
+.my-car-badge {
+  background: rgba(45, 52, 54, 0.12);
+  border: 1px solid rgba(45, 52, 54, 0.25);
+  border-radius: 8px;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 900;
+  color: #2d3436;
+  letter-spacing: 0.5px;
+}
+
 .hud-card {
   background: var(--hud-bg);
   border: 2px solid rgba(255, 255, 255, 0.85);
@@ -1422,6 +1433,17 @@ body {
   text-shadow: 0 1px 4px rgba(255, 255, 255, 0.8);
 }
 
+/* Cars Container */
+.cars-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 18;
+}
+
 /* Rocket League Car */
 .rocket-car {
   position: absolute;
@@ -1433,6 +1455,31 @@ body {
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25));
 }
 
+/* Floating Player Nametag */
+.car-player-tag {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30, 39, 46, 0.85);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  z-index: 25;
+}
+
+.car-player-tag.is-me {
+  background: #2ed573;
+  color: #1e272e;
+  box-shadow: 0 0 6px #2ed573;
+}
+
 .car-chassis {
   position: absolute;
   width: 36px;
@@ -1442,6 +1489,26 @@ body {
   background: linear-gradient(90deg, #ff4757 0%, #ff6b81 50%, #ffa502 100%);
   border: 2px solid #2d3436;
   border-radius: 6px 14px 14px 6px;
+}
+
+/* Custom Car Color Palettes for Multi-Car */
+.rocket-car.car-color-0 .car-chassis {
+  background: linear-gradient(90deg, #ff4757 0%, #ff6b81 50%, #ffa502 100%);
+}
+.rocket-car.car-color-1 .car-chassis {
+  background: linear-gradient(90deg, #1e90ff 0%, #00d2d3 50%, #70a1ff 100%);
+}
+.rocket-car.car-color-2 .car-chassis {
+  background: linear-gradient(90deg, #2ed573 0%, #7bed9f 50%, #10ac84 100%);
+}
+.rocket-car.car-color-3 .car-chassis {
+  background: linear-gradient(90deg, #9b59b6 0%, #e056fd 50%, #be2edd 100%);
+}
+.rocket-car.car-color-4 .car-chassis {
+  background: linear-gradient(90deg, #f1c40f 0%, #f39c12 50%, #feca57 100%);
+}
+.rocket-car.car-color-5 .car-chassis {
+  background: linear-gradient(90deg, #ff3838 0%, #ff9f1a 50%, #ff5252 100%);
 }
 
 .car-cockpit {
